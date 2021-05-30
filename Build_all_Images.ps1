@@ -1,9 +1,11 @@
-$registry_url =         $env:registry_url
-$registry_username =    $env:registry_username
-$registry_password =    $env:registry_password
-$image_proxy =          $env:image_proxy
-$image_release =        $env:image_release
-$post_install_proxy =   $env:post_install_proxy
+$registry_url =             $env:registry_url
+$registry_username =        $env:registry_username
+$registry_password =        $env:registry_password
+$image_proxy =              $env:image_proxy
+$image_name =               $env:image_name
+$image_release =            $env:image_release
+$image_latest_release =     $env:image_latest_release # Needed for JFrog :-)
+$post_install_proxy =       $env:post_install_proxy
 
 $array = @("ltsc2019","1909")
 
@@ -19,11 +21,13 @@ foreach ($v in $array){
 
     echo "`nBuilding windows:$version";
 
-    docker build --build-arg version=$version --build-arg proxy=$image_proxy --build-arg post_install_proxy=$post_install_proxy --pull --rm -f "Dockerfile" -t "$registry_url/windows/windows-${version}${image_release}" "."
-    docker push "$registry_url/windows/windows-${version}${image_release}"
+    docker build --build-arg version=$version --build-arg proxy=$image_proxy --build-arg post_install_proxy=$post_install_proxy --pull --rm -f "Dockerfile" -t "${registry_url}${image_name}${version}${image_release}" "."
+    docker push "${registry_url}${image_name}${version}${image_release}"
 
-    docker tag "$registry_url/windows/windows-${version}${image_release}" "$registry_url/windows/windows-${version}:latest"
-    docker push "$registry_url/windows/windows-${version}:latest"
+    if ( -not ([string]::IsNullOrEmpty($image_latest_release))) { 
+        docker tag "${registry_url}${image_name}${version}${image_release}" "${registry_url}${image_name}${version}${image_latest_release}"
+        docker push "${registry_url}${image_name}${version}${image_latest_release}"
+    }
 }
 
 docker logout $registry_url
